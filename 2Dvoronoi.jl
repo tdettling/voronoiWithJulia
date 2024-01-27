@@ -25,12 +25,12 @@ struct QuadtreeNode
 end
 
 # function to determine if a point/seed falls in our proper boundaries
-function in_boundary(coordinate::Coordinate, bound::Tuple{Coordinate, Coordinate})
+function in_boundary(coordinate::Coordinate, boundary::Tuple{Coordinate, Coordinate})
     # making sure x is within the boundaries 
-    xRange = bound[1].x <= coordinate.x <= bound[2].x
+    xRange = boundary[1].x <= coordinate.x <= boundary[2].x
 
     # making sure y is within the boundaries
-    yRange = bound[1].y <= coordinate.y <= bound[2].y
+    yRange = boundary[1].y <= coordinate.y <= boundary[2].y
 
     # returning bool
     return xRange && yRange
@@ -111,8 +111,19 @@ function voronoi_seed_gen(tree::QuadtreeNode, boundary::Tuple{Coordinate, Coordi
 end
 
 
+function findClosestSeed(node::QuadtreeNode)
+    data = node.dataInNode
+    split into coordniates
+    for seed in collection of seeds 
+        close for d1, d2, d3 and d4
+            if closest = same 
+                no need need to split, what do we retunr
+            else:
+                split
 
+        
 
+end
 
 
 
