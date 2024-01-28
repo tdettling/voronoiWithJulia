@@ -1,10 +1,9 @@
+# imports
 using Pkg
-# for scatter plot to visualize voronoi
-Pkg.add("Plots")
-Pkg.add("GR")
+Pkg.add("BenchmarkTools")
+using BenchmarkTools
 
 # defining a coordinate structure for our points and seeds
-# :: is datatype declaration
 struct Point
     x::Int
     y::Int
@@ -115,22 +114,30 @@ end
 #########################################################################################################################
 ## Start of Main
 #########################################################################################################################
+
 println("START")
-global seeds = [Point(1,1), Point(3,9), Point(7,2)]
-global size = 10
 
-#getting boundary from size
-up_left_X = div((-1 * size), 2)
-up_left_Y = div(size, 2)
-low_right_X = div(size, 2)
-low_right_Y =  div((-1*size), 2)
+sec = @benchmark begin
+    seeds = [Point(1,1), Point(3,9), Point(7,2)]
+    size = 10
 
-boundary = (Point(up_left_X, up_left_Y), Point(low_right_X, low_right_Y))
-quadtree = create_tree(boundary)
+    #getting boundary from size
+    up_left_X = div((-1 * size), 2)
+    up_left_Y = div(size, 2)
+    low_right_X = div(size, 2)
+    low_right_Y =  div((-1*size), 2)
 
-for seed in seeds
-    #seed will be closest to itself
-    insertNode(quadtree, seed, seed)
+    boundary = (Point(up_left_X, up_left_Y), Point(low_right_X, low_right_Y))
+    quadtree = create_tree(boundary)
+
+    for seed in seeds
+        #seed will be closest to itself
+        insertNode(quadtree, seed, seed)
+    end
 end
+
+time_seconds = time(sec)/1e9
+println("Elapsed Time: ", time_seconds, " seconds")
+
 println("END")
 
