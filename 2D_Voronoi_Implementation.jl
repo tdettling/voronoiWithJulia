@@ -56,8 +56,15 @@ end
 function split(node::Node)
     bounds = node.boundary
 
+    # checking to see if we have an odd area to split
     checkBound = oddDivision(bounds)
     boundPrimary = checkBound[1]
+
+    # if area is odd, create another tree to calculate voronoi diagram with smaller space
+    # I feel like thi sshould be corrected to:
+        # If odd area,
+            # create a number of nodes per pixal of smaller area 
+            # manually calculate per pixal the closest seed
 
     if length(checkBound)>1
         extraTree = create_tree(bounds[2])
