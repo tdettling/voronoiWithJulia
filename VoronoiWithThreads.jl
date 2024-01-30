@@ -45,8 +45,6 @@ end
 global voronoi = zeros(Int32,SIZE_AREA_NT,SIZE_AREA_NT)
 global seeds = [1 1;1 SIZE_AREA_NT;SIZE_AREA_NT 1;SIZE_AREA_NT SIZE_AREA_NT]
 
-#using Profile
-
 #@profile calculateDiagram(voronoi, seeds)
 @time calculateDiagram(voronoi, seeds)
 
