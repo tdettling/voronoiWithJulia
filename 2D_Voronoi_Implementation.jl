@@ -74,7 +74,7 @@ function split(node::Node)
     # Checking to see if we have an odd area to split
     checkBound = oddDivision(bounds)
     boundPrimary = checkBound[1]
-
+#=
     # If area is odd, calculate the closest seed by brute force for the smaller area
     if length(checkBound) > 1
         # Extracting the removed smaller chunk
@@ -88,6 +88,7 @@ function split(node::Node)
             insertNode(node, point, findClosestSeed(point))
         end
     end
+=#
 
     # calculating new corners
     low_right_X = div(boundPrimary[1].x + boundPrimary[2].x, 2)
@@ -226,6 +227,7 @@ function populateDiagram(node::Node, boundary::Tuple{Point, Point}, diagram::Mat
                 diagram[x,y] = closest_seed
             end
         end
+        return diagram
     else
         # non-leaf, stores refrences t children. 
         # need recursivly break down to manually add
@@ -234,13 +236,63 @@ function populateDiagram(node::Node, boundary::Tuple{Point, Point}, diagram::Mat
             populateDiagram(child, newBound, diagram)
         end
     end
-    
+end
+
+function readFile(file)
+    # needs to return x, y, number of seeds, and a list of seeds
+end
+
+function printGrid()
+    for row_of_grid in eachrow(grid)
+        println(row_of_grid)
+    end
+end
+
+function assignGrid()
+    # assigning rows and cols for readability
+    rows = size(grid, 1)
+    columns = size(grid, 2)
+
+
+    # looping through grid
+    for row in 1:rows
+        for column in 1:columns
+            # assigning actual coordinate to space
+            # -1 for row/column
+            newX = voronoi_bound[1].x + (column-1)
+            newY = voronoi_bound[1].y - (row-1)
+            grid[row, column] = Point(newX, newY)
+        end
+    end
+end
+
+function getBoundary()
+    new_bound = (Point(0,0), Point(0,0))
+
+    if size_of_grid % 2 != 0
+        # we need to shift grid up to get accurate oddDivision
+        up_left_X = div((-1 * size_of_grid), 2) 
+        up_left_Y = div(size_of_grid , 2) + 1
+        low_right_X = div(size_of_grid, 2) + 1
+        low_right_Y =  div((-1*size_of_grid), 2)
+
+        new_bound = (Point(up_left_X, up_left_Y), Point(low_right_X, low_right_Y))
+    else
+        up_left_X = div((-1 * size_of_grid), 2)
+        up_left_Y = div(size_of_grid , 2)
+        low_right_X = div(size_of_grid, 2)
+        low_right_Y =  div((-1*size_of_grid), 2)
+
+        new_bound = (Point(up_left_X, up_left_Y), Point(low_right_X, low_right_Y))
+    end
+    return new_bound
 end
 
 # main runner for timing
 function generateVoronoi(tree::Node, boundary::Tuple{Point, Point}, diagram::Matrix{Point})
     # Traverse the tree and populate voronoi
-    populateDiagram(tree, boundary, diagram)
+    grid = populateDiagram(tree, boundary, diagram)
+    return grid
 end
 
 #########################################################################################################################
@@ -250,27 +302,21 @@ end
 println("START")
 
 global seeds = [Point(1,1), Point(3,9), Point(7,2)]
-size = 10
+global size_of_grid = 6
+global grid = Matrix{Point}(undef, size_of_grid + 1, size_of_grid + 1)
+global voronoi_bound = getBoundary()
 
-#getting boundary from size
-up_left_X = div((-1 * size), 2)
-up_left_Y = div(size, 2)
-low_right_X = div(size, 2)
-low_right_Y =  div((-1*size), 2)
+#getting boundary from size_of_grid
+#=up_left_X = div((-1 * size_of_grid), 2)
+up_left_Y = div(size_of_grid + 1, 2)
+low_right_X = div(size_of_grid + 1, 2)
+low_right_Y =  div((-1*size_of_grid), 2)
 
-tempBoundary = (Point(up_left_X, up_left_Y), Point(low_right_X, low_right_Y))
+global voronoi_bound = (Point(up_left_X, up_left_Y), Point(low_right_X, low_right_Y))
+=#
 
-# if we input a seed outside our boundary, 
-# remove it from our global seed list
-#seeds = [seed for seed in seeds if in_boundary(seed, maxBound)]
-
-#for seed in seeds
-#    if (!in_boundary(seed, maxBound))
-#        delete!(seeds, occursin(seed, seeds))
-#    end
-#end
-
-quadtree = create_tree(tempBoundary)
+assignGrid()
+quadtree = create_tree(voronoi_bound)
 
 for seed in seeds
     #seed will be closest to itself
@@ -278,11 +324,11 @@ for seed in seeds
 end
 
 # Create a 2D array to represent the voronoi diagram
-grid = Matrix{Point}(undef, size, size)
+printGrid()
 
 # start of runtime        
 sec = @benchmark begin
-    generateVoronoi(quadtree, tempBoundary, grid)
+    diagram = generateVoronoi(quadtree, voronoi_bound, grid)
 end
 
 time_seconds = time(sec)/1e9
