@@ -242,8 +242,8 @@ function readFile(file)
     # needs to return x, y, number of seeds, and a list of seeds
 end
 
-function printGrid()
-    for row_of_grid in eachrow(grid)
+function printGrid(grid_to_print)
+    for row_of_grid in eachrow(grid_to_print)
         println(row_of_grid)
     end
 end
@@ -301,19 +301,10 @@ end
 
 println("START")
 
-global seeds = [Point(1,1), Point(3,9), Point(7,2)]
-global size_of_grid = 6
+global seeds = [Point(1,1), Point(3,2), Point(1,3)]
+global size_of_grid = 7
 global grid = Matrix{Point}(undef, size_of_grid + 1, size_of_grid + 1)
 global voronoi_bound = getBoundary()
-
-#getting boundary from size_of_grid
-#=up_left_X = div((-1 * size_of_grid), 2)
-up_left_Y = div(size_of_grid + 1, 2)
-low_right_X = div(size_of_grid + 1, 2)
-low_right_Y =  div((-1*size_of_grid), 2)
-
-global voronoi_bound = (Point(up_left_X, up_left_Y), Point(low_right_X, low_right_Y))
-=#
 
 assignGrid()
 quadtree = create_tree(voronoi_bound)
@@ -324,14 +315,16 @@ for seed in seeds
 end
 
 # Create a 2D array to represent the voronoi diagram
-printGrid()
+printGrid(grid)
 
 # start of runtime        
 sec = @benchmark begin
     diagram = generateVoronoi(quadtree, voronoi_bound, grid)
+    printGrid(diagram)
 end
 
 time_seconds = time(sec)/1e9
 println("Elapsed Time: ", time_seconds, " seconds")
 
+#printGrid(diagram)
 println("END")
