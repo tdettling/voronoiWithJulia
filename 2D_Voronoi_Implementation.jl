@@ -57,6 +57,40 @@ function findClosestSeed(point::Point)
 end
 
 
+function generateNewGrid(up_left::Point, low_right::Point)
+    xRange = (up_left.x - low_right.x)*-1
+    yRange = (up_left.y - low_right.y)
+
+    newGrid = Matrix{Point}(undef, xRange, yRange)
+    # looping through grid
+    for row in xRange
+        for column in yRange
+            # assigning actual coordinate to space
+            # -1 for row/column
+            newX = voronoi_bound[1].x + (column-1)
+            newY = voronoi_bound[1].y - (row-1)
+            newGrid[row, column] = Point(newX, newY)
+        end
+    end
+    return newGrid
+end
+
+function sameSeedCorners(node::Node)
+    up_left_seed = findClosestSeed(Point(node.boundary[1].x, node.boundary[1].y))
+    up_right_seed = findClosestSeed(Point(node.boundary[2].x, node.boundary[1].y))
+    low_left_seed = findClosestSeed(Point(node.boundary[1].x, node.boundary[2].y))
+    low_right_seed = findClosestSeed(Point(node.boundary[2].x, node.boundary[2].y))
+    isSame = true
+
+    if (up_left_seed != up_right_seed) || (up_left_seed != low_left_seed) || (up_left_seed != low_right_seed)
+        isSame = false
+    end
+
+    return isSame
+end
+
+
+
 
 function remove_chunk(bound::Tuple{Point, Point}, chunk_size::Tuple{Int, Int})
     # Extract the corners of the chunk
@@ -89,7 +123,27 @@ function split(node::Node)
     low_left = (Point(boundPrimary[1].x, low_right_Y), Point(low_right_X, boundPrimary[2].y))
 
     # adding the children
-    node.children = [(low_right, [], []) , (up_left, [], []), (up_right, [], []), (low_left, [], []) ]
+    node.children = [
+        Node(low_right, [], []),
+        Node(up_left, [], []),
+        Node(up_right, [], []),
+        Node(low_left, [], [])
+    ]
+
+    # assigning new boundaries to the children
+    node.children[1].boundary = (low_right, boundPrimary[2])
+    node.children[2].boundary = (boundPrimary[1], Point(low_right_X, low_right_Y))
+    node.children[3].boundary = (Point(low_right_X, boundPrimary[1].y), Point(boundPrimary[2].x, low_right_Y))
+    node.children[4].boundary = (Point(boundPrimary[1].x, low_right_Y), Point(low_right_X, boundPrimary[2].y))
+
+    # Check if all four corners have the same closest seed
+    if sameSeedCorners(node)
+        # If all four corners have the same closest seed, stop subdividing
+        # Set each point in the diagram to the closest seed
+        node.children = []
+        populateDiagram(node, grid)
+        return
+    end
 
     # adding the data back into the children nodes
     for point in node.dataInNode
@@ -100,6 +154,7 @@ function split(node::Node)
     # removing data from parent
     node.dataInNode = []
 end
+
 
 
 
@@ -150,12 +205,16 @@ function insertNode(node::Node, point::Point, closestSeed::Point)
     # if it's not empty, then it has points 
     # and cannot/should not be subdivided further
     else
+        # Find the closest seed for the current point
+        closestSeed = findClosestSeed(point)
+        
         # Use the same closestSeed for all children
         for child in node.children
             insertNode(child, point, closestSeed)
         end
     end
 end
+
 
 
 # given two bounary sets, make the larges box and return it. 
@@ -198,26 +257,26 @@ function create_tree(boundary::Tuple{Point, Point})
     return Node(boundary, [], [])
 end
 
-function populateDiagram(node::Node, boundary::Tuple{Point, Point}, diagram::Matrix{Point})
+function populateDiagram(node::Node, diagram::Matrix{Point})
     if isempty(node.children)
-        # Leaf node, manually add points to the diagram
+        # Leaf node
         for row in 1:size(diagram, 1)
             for column in 1:size(diagram, 2)
-                curPoint = Point(row, column)
-                closest_seed = findClosestSeed(curPoint)
+                closest_seed = findClosestSeed(diagram[row, column])
                 diagram[row, column] = closest_seed
             end
         end
     else
         # Non-leaf node, recursively process children
         for child in node.children
-            newBound = (child.boundary[1], child.boundary[2])
-            populateDiagram(child, newBound, diagram)
+            populateDiagram(child, diagram)
         end
     end
 
     return diagram
 end
+
+
 
 
 
@@ -275,7 +334,7 @@ end
 # main runner for timing
 function generateVoronoi(tree::Node, boundary::Tuple{Point, Point}, diagram::Matrix{Point})
     # Traverse the tree and populate voronoi
-    return populateDiagram(tree, boundary, diagram)
+    return populateDiagram(tree, diagram)
 end
 
 #########################################################################################################################
