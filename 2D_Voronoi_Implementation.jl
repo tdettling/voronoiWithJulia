@@ -42,17 +42,20 @@ end
 
 function findClosestSeed(point::Point)
     winner = seeds[1]
-    for seed in seeds
-        winDistance = sqrt((winner.x - point.x)^2 + (winner.y - point.y)^2)
-        seedDistance = sqrt((seed.x - point.x)^2 + (seed.y - point.y)^2)
+    winDistanceSquared = (winner.x - point.x)^2 + (winner.y - point.y)^2
 
-        if seedDistance <= winDistance
+    for seed in seeds
+        seedDistanceSquared = (seed.x - point.x)^2 + (seed.y - point.y)^2
+
+        if seedDistanceSquared <= winDistanceSquared
             winner = seed
+            winDistanceSquared = seedDistanceSquared
         end
     end
 
     return winner
 end
+
 
 
 function remove_chunk(bound::Tuple{Point, Point}, chunk_size::Tuple{Int, Int})
@@ -74,21 +77,6 @@ function split(node::Node)
     # Checking to see if we have an odd area to split
     checkBound = oddDivision(bounds)
     boundPrimary = checkBound[1]
-#=
-    # If area is odd, calculate the closest seed by brute force for the smaller area
-    if length(checkBound) > 1
-        # Extracting the removed smaller chunk
-        (_, removed_chunk) = remove_chunk(boundPrimary, (1, 1))
-
-        # Brute-force computation for the removed smaller chunk
-        brute_force_result = brute_force_partition(removed_chunk, seeds)
-
-        # Add the brute-force result to the quadtree
-        for point in brute_force_result
-            insertNode(node, point, findClosestSeed(point))
-        end
-    end
-=#
 
     # calculating new corners
     low_right_X = div(boundPrimary[1].x + boundPrimary[2].x, 2)
@@ -104,19 +92,16 @@ function split(node::Node)
     node.children = [(low_right, [], []) , (up_left, [], []), (up_right, [], []), (low_left, [], []) ]
 
     # adding the data back into the children nodes
-    # https://discourse.julialang.org/t/help-design-a-node-for-a-tree/67444/11
-    # https://stackoverflow.com/questions/41946007/efficient-and-well-explained-implementation-of-a-quadtree-for-2d-collision-det
-
     for point in node.dataInNode
-        for child in node.children
-            closeSeed = findClosestSeed(child.dataInNode)
-            insertNode(child, point, closeSeed)
-        end
+        closestSeed = findClosestSeed(point)
+        insertNode(node, point, closestSeed)
     end
 
     # removing data from parent
     node.dataInNode = []
 end
+
+
 
 function oddDivision(boundary::Tuple{Point, Point})
     boundarySet = Tuple{Tuple{Point, Point}, Tuple{Point, Point}}
@@ -153,24 +138,25 @@ end
 
 # inserting node
 function insertNode(node::Node, point::Point, closestSeed::Point)
-    # is empty means that there are only refrences to children
+    # is empty means that there are only references to children
     # not a full region to split
     if isempty(node.children)
         push!(node.dataInNode, point)
         # could switch this to two rather than 4.. depends on the number of seeds.
         if length(node.dataInNode) > 4
-                split(node)
+            split(node)
         end
 
-    # if its not empty, then it has points 
-    # and cannot/should not be subdivded further
+    # if it's not empty, then it has points 
+    # and cannot/should not be subdivided further
     else
+        # Use the same closestSeed for all children
         for child in node.children
-            closeSeed = findClosestSeed(child.dataInNode)
-            insertNode(child, point, closeSeed)
+            insertNode(child, point, closestSeed)
         end
     end
 end
+
 
 # given two bounary sets, make the larges box and return it. 
 function maxBoundary(bound1::Tuple{Point, Point}, bound2::Tuple{Point, Point})
@@ -212,31 +198,29 @@ function create_tree(boundary::Tuple{Point, Point})
     return Node(boundary, [], [])
 end
 
-# moving through tree to calculate grid
 function populateDiagram(node::Node, boundary::Tuple{Point, Point}, diagram::Matrix{Point})
-    # leaf check - then no need to traverse tree. 
-    # manually add
     if isempty(node.children)
-         # for the entrie x-axis of the boundary
-        for x in boundary[1].x:boundary[2].x
-            #for the entire y axis of the boundary
-            for y in boundary[1].y:boundary[2].y
-                curPoint = Point(x, y)
+        # Leaf node, manually add points to the diagram
+        for row in 1:size(diagram, 1)
+            for column in 1:size(diagram, 2)
+                curPoint = Point(row, column)
                 closest_seed = findClosestSeed(curPoint)
-                # populating diagram
-                diagram[x,y] = closest_seed
+                diagram[row, column] = closest_seed
             end
         end
-        return diagram
     else
-        # non-leaf, stores refrences t children. 
-        # need recursivly break down to manually add
+        # Non-leaf node, recursively process children
         for child in node.children
             newBound = (child.boundary[1], child.boundary[2])
             populateDiagram(child, newBound, diagram)
         end
     end
+
+    return diagram
 end
+
+
+
 
 function readFile(file)
     # needs to return x, y, number of seeds, and a list of seeds
@@ -291,8 +275,7 @@ end
 # main runner for timing
 function generateVoronoi(tree::Node, boundary::Tuple{Point, Point}, diagram::Matrix{Point})
     # Traverse the tree and populate voronoi
-    grid = populateDiagram(tree, boundary, diagram)
-    return grid
+    return populateDiagram(tree, boundary, diagram)
 end
 
 #########################################################################################################################
@@ -301,8 +284,8 @@ end
 
 println("START")
 
-global seeds = [Point(1,1), Point(3,2), Point(1,3)]
-global size_of_grid = 7
+global seeds = [Point(-3, 3), Point(3, -3), Point(-3, -3), Point(3,3)]
+global size_of_grid = 6
 global grid = Matrix{Point}(undef, size_of_grid + 1, size_of_grid + 1)
 global voronoi_bound = getBoundary()
 
@@ -315,16 +298,25 @@ for seed in seeds
 end
 
 # Create a 2D array to represent the voronoi diagram
+println("*****************************************************************************************")
+println(" Starting Grid")
 printGrid(grid)
+println("*****************************************************************************************")
 
 # start of runtime        
 sec = @benchmark begin
-    diagram = generateVoronoi(quadtree, voronoi_bound, grid)
-    printGrid(diagram)
+    global final_diagram
+    final_diagram = generateVoronoi(quadtree, voronoi_bound, grid)
 end
+println("*****************************************************************************************")
+println("Final Diagram")
+println("*****************************************************************************************")
+printGrid(final_diagram)
+println("*****************************************************************************************")
 
 time_seconds = time(sec)/1e9
+println("*****************************************************************************************")
 println("Elapsed Time: ", time_seconds, " seconds")
+println("*****************************************************************************************")
 
-#printGrid(diagram)
 println("END")
