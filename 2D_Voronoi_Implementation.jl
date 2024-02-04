@@ -309,6 +309,7 @@ function assignGrid()
     end
 end
 
+# used to get an accruate voronoi "box"
 function getBoundary()
     new_bound = (Point(0,0), Point(0,0))
 
@@ -343,20 +344,23 @@ end
 
 println("START")
 
+#initalization of stuff
 global seeds = [Point(-3, 3), Point(3, -3), Point(-3, -3), Point(3,3)]
-global size_of_grid = 6
+global size_of_grid = 7
 global grid = Matrix{Point}(undef, size_of_grid + 1, size_of_grid + 1)
 global voronoi_bound = getBoundary()
 
+#populating the voronoi grid with actual points
 assignGrid()
 quadtree = create_tree(voronoi_bound)
 
+#adding in seeds
 for seed in seeds
     #seed will be closest to itself
     insertNode(quadtree, seed, seed)
 end
 
-# Create a 2D array to represent the voronoi diagram
+#starting
 println("*****************************************************************************************")
 println(" Starting Grid")
 printGrid(grid)
@@ -367,6 +371,7 @@ sec = @benchmark begin
     global final_diagram
     final_diagram = generateVoronoi(quadtree, voronoi_bound, grid)
 end
+
 println("*****************************************************************************************")
 println("Final Diagram")
 println("*****************************************************************************************")
