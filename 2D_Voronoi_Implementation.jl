@@ -332,6 +332,14 @@ function getBoundary()
     return new_bound
 end
 
+function pointToGrid()
+    voronoi = zeros(Int32,SIZE_AREA_NT,SIZE_AREA_NT)
+end
+
+function gridToPoints()
+
+end
+
 # main runner for timing
 function generateVoronoi(tree::Node, boundary::Tuple{Point, Point}, diagram::Matrix{Point})
     # Traverse the tree and populate voronoi

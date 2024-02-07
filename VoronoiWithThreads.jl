@@ -21,12 +21,17 @@
 # The speedup is almost 6
 
 using Base.Threads
-const SIZE_AREA_NT = 4096
+
+const SIZE_AREA_NT = 10
 const NSEEDS = 4
 
-function calculateDiagram(voronoi, seeds)
-    @threads for j in 1:SIZE_AREA_NT
-        for i in 1:SIZE_AREA_NT
+global voronoi = zeros(Int32,SIZE_AREA_NT,SIZE_AREA_NT)
+global seeds = [1 1;1 SIZE_AREA_NT;SIZE_AREA_NT 1;SIZE_AREA_NT SIZE_AREA_NT]
+
+function calculateDiagram(voronoi, seeds, size)
+    
+    @threads for j in 1:size
+        for i in 1:size
             shortestDistance = typemax(Int32)
             closestSeed = 0
             for k in 1:NSEEDS
@@ -40,20 +45,30 @@ function calculateDiagram(voronoi, seeds)
             voronoi[i,j] = closestSeed
         end
     end
+    #print(voronoi)
+    return voronoi
 end
 
-global voronoi = zeros(Int32,SIZE_AREA_NT,SIZE_AREA_NT)
-global seeds = [1 1;1 SIZE_AREA_NT;SIZE_AREA_NT 1;SIZE_AREA_NT SIZE_AREA_NT]
+function printGrid(grid_to_print)
+    for row_of_grid in eachrow(grid_to_print)
+        println(row_of_grid)
+    end
+end
 
 #@profile calculateDiagram(voronoi, seeds)
-@time calculateDiagram(voronoi, seeds)
+#@time calculateDiagram(voronoi, seeds)
 
-@time calculateDiagram(voronoi, seeds)
+#@time calculateDiagram(voronoi, seeds)
 
 #print(voronoi)
 
-#Profile.print()
+#= Profile.print()
 print(voronoi[1,1])
 print(voronoi[1,SIZE_AREA_NT])
 print(voronoi[SIZE_AREA_NT,1])
 print(voronoi[SIZE_AREA_NT,SIZE_AREA_NT])
+=#
+
+#println(typeof(voronoi))
+newDiagram = calculateDiagram(voronoi, seeds, SIZE_AREA_NT)
+printGrid(newDiagram)
