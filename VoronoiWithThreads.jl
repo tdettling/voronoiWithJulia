@@ -57,8 +57,8 @@ function toPointGrid(voronoi, seeds)
 end
 
 
-newDiagram = calculateDiagram(voronoi, seeds, SIZE_AREA_NT)
-grid = toPointGrid(newDiagram, seeds)
-printGrid(grid)
-print(size(grid))
-print(typeof(grid))
+#newDiagram = calculateDiagram(voronoi, seeds, SIZE_AREA_NT)
+#grid = toPointGrid(newDiagram, seeds)
+#printGrid(grid)
+#print(size(grid))
+#print(typeof(grid))

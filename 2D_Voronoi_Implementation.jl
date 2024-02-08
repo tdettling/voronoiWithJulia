@@ -3,8 +3,11 @@ using Pkg
 Pkg.add("BenchmarkTools")
 using BenchmarkTools
 
+#https://docs.julialang.org/en/v1/base/arrays/#Core.Array
 # defining a coordinate structure for our points and seeds
 struct Point
+    # https://discourse.julialang.org/t/how-to-work-with-julias-structs/19783
+    # for struct of point idea
     x::Int
     y::Int
 end
@@ -13,7 +16,7 @@ end
 struct Node
     # defining the boundary of the voronoi diagram with two points,
     # one in the upper right and one in the lower left corner.
-    boundary::Tuple{Point, Point}
+    boundary::Tuple{} 
 
     # recursive data structure
     children::Vector{Node}
@@ -24,7 +27,7 @@ struct Node
 end
 
 # function to determine if a point/seed falls in our proper boundaries
-function in_boundary(point::Point, boundary::Tuple{Point, Point})
+function in_boundary(point, boundary)
     isIn = true
 
     # making sure x is within the boundaries 
@@ -40,7 +43,7 @@ function in_boundary(point::Point, boundary::Tuple{Point, Point})
     return isIn
 end
 
-function findClosestSeed(point::Point)
+function findClosestSeed(point)
     winner = seeds[1]
     winDistanceSquared = (winner.x - point.x)^2 + (winner.y - point.y)^2
 
@@ -57,7 +60,7 @@ function findClosestSeed(point::Point)
 end
 
 
-function generateNewGrid(up_left::Point, low_right::Point)
+function generateNewGrid(up_left, low_right)
     xRange = (up_left.x - low_right.x)*-1
     yRange = (up_left.y - low_right.y)
 
@@ -75,7 +78,7 @@ function generateNewGrid(up_left::Point, low_right::Point)
     return newGrid
 end
 
-function sameSeedCorners(node::Node)
+function sameSeedCorners(node)
     up_left_seed = findClosestSeed(Point(node.boundary[1].x, node.boundary[1].y))
     up_right_seed = findClosestSeed(Point(node.boundary[2].x, node.boundary[1].y))
     low_left_seed = findClosestSeed(Point(node.boundary[1].x, node.boundary[2].y))
@@ -92,7 +95,7 @@ end
 
 
 
-function remove_chunk(bound::Tuple{Point, Point}, chunk_size::Tuple{Int, Int})
+function remove_chunk(bound, chunk_size)
     # Extract the corners of the chunk
     chunk_up_left = bound[1]
     chunk_low_right = Point(bound[1].x + chunk_size[1] - 1, bound[1].y - chunk_size[2] + 1)
@@ -105,7 +108,7 @@ function remove_chunk(bound::Tuple{Point, Point}, chunk_size::Tuple{Int, Int})
 end
 
 
-function split(node::Node)
+function split(node)
     bounds = node.boundary
 
     # Checking to see if we have an odd area to split
@@ -158,7 +161,7 @@ end
 
 
 
-function oddDivision(boundary::Tuple{Point, Point})
+function oddDivision(boundary)
     boundarySet = Tuple{Tuple{Point, Point}, Tuple{Point, Point}}
 
     #placeholders for values
@@ -192,7 +195,7 @@ end
 
 
 # inserting node
-function insertNode(node::Node, point::Point, closestSeed::Point)
+function insertNode(node, point, closestSeed)
     # is empty means that there are only references to children
     # not a full region to split
     if isempty(node.children)
@@ -218,7 +221,7 @@ end
 
 
 # given two bounary sets, make the larges box and return it. 
-function maxBoundary(bound1::Tuple{Point, Point}, bound2::Tuple{Point, Point})
+function maxBoundary(bound1, bound2)
     maxBoundary = Tuple{Point, Point}
 
 
@@ -235,29 +238,35 @@ function maxBoundary(bound1::Tuple{Point, Point}, bound2::Tuple{Point, Point})
 end
 
 # Brute-force function to compute closest seed for each pixel in a given boundary
-function brute_force_partition(boundary::Tuple{Point, Point}, seeds::Vector{Point})
-    closest_seeds = Vector{Point}()
-
-    # for the entrie x-axis of the boundary
-    for x in boundary[1].x:boundary[2].x
-        #for the entire y axis of the boundary
-        for y in boundary[1].y:boundary[2].y
-            curPoint = Point(x, y)
-            closest_seed = findClosestSeed(curPoint)
-            # add closest seed for that point in a list
-            push!(closest_seeds, closest_seed)
+function brute_force_partition(seedList, gridPoints)
+    for row in size(gridPoints, 1)
+        for col in size(gridPoints, 2)
+            shortestDistance = typemax(Int32)
+            closestSeed = nothing 
+            for seed in seedList
+                seedDistance = distance(seed, gridPoints[row, col])
+                if seedDistance < shortestDistance
+                    shortestDistance = seedDistance
+                    closestSeed = seed
+                end
+            end
+            gridPoints[row, col] = closestSeed
         end
     end
+    return gridPoints
+end
 
-    return closest_seeds
+
+function distance(p1, p2)
+    return sqrt((p2.x - p1.x)^2 + (p2.y-p1.y)^2)
 end
 
 # creating a quadtree
-function create_tree(boundary::Tuple{Point, Point})
+function create_tree(boundary)
     return Node(boundary, [], [])
 end
 
-function populateDiagram(node::Node, diagram::Matrix{Point})
+function populateDiagram(node, diagram)
     if isempty(node.children)
         # Leaf node
         for row in 1:size(diagram, 1)
@@ -380,6 +389,7 @@ sec = @benchmark begin
     final_diagram = generateVoronoi(quadtree, voronoi_bound, grid)
 end
 
+bruteDiagram = brute_force_partition(seeds, grid)
 println("*****************************************************************************************")
 println("Final Diagram")
 println("*****************************************************************************************")
