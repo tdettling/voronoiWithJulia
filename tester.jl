@@ -19,7 +19,7 @@ function test_voronoi_small1()
     final_diagram = generateVoronoi(quadtree, voronoi_bound, grid)
 
     # You can customize the actual and expected diagrams based on your expectations
-    expected_diagram = fill(Point(-3, 3), size(final_diagram))
+    expected_diagram = brute_force_partition(seeds, grid)
     
     @test final_diagram == expected_diagram
 end

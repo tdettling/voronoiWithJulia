@@ -1,12 +1,12 @@
 # imports
+#https://docs.julialang.org/en/v1/base/arrays/#Core.Array
+# defining a coordinate structure for our points and seeds
 using Pkg
 Pkg.add("BenchmarkTools")
 using BenchmarkTools
 
-#https://docs.julialang.org/en/v1/base/arrays/#Core.Array
-# defining a coordinate structure for our points and seeds
 struct Point
-    # https://discourse.julialang.org/t/how-to-work-with-julias-structs/19783
+    # https://lhendricks.org/econ890/julia/user_defined_types.html
     # for struct of point idea
     x::Int
     y::Int
@@ -16,7 +16,7 @@ end
 struct Node
     # defining the boundary of the voronoi diagram with two points,
     # one in the upper right and one in the lower left corner.
-    boundary::Tuple{} 
+    boundary::Tuple{Point, Point} 
 
     # recursive data structure
     children::Vector{Node}
@@ -31,36 +31,29 @@ function in_boundary(point, boundary)
     isIn = true
 
     # making sure x is within the boundaries 
-    if point.x < boundary[1].x || point.x > boundary[2].x
+    if point.x < boundary[1].x || point.x > boundary[2].x ||
+       point.y < boundary[1].y || point.y > boundary[2].y
         isIn = false
     end
-
-    # making sure y is within the boundaries
-    if point.y < boundary[1].y || point.y > boundary[2].y
-        isIn = false
-    end
-
     return isIn
 end
 
-function findClosestSeed(point)
+function findClosestSeed(point, seeds)
     winner = seeds[1]
-    winDistanceSquared = (winner.x - point.x)^2 + (winner.y - point.y)^2
+    winDistance = sqrt((winner.x - point.x)^2 + (winner.y - point.y)^2)
 
     for seed in seeds
-        seedDistanceSquared = (seed.x - point.x)^2 + (seed.y - point.y)^2
-
-        if seedDistanceSquared <= winDistanceSquared
+        seedDistance = sqrt((seed.x - point.x)^2 + (seed.y - point.y)^2)
+        if seedDistance <= winDistance
             winner = seed
-            winDistanceSquared = seedDistanceSquared
+            winDistance = seedDistance
         end
     end
-
     return winner
 end
 
 
-function generateNewGrid(up_left, low_right)
+function generateNewGrid(up_left, low_right, voronoi_bound)
     xRange = (up_left.x - low_right.x)*-1
     yRange = (up_left.y - low_right.y)
 
@@ -78,11 +71,11 @@ function generateNewGrid(up_left, low_right)
     return newGrid
 end
 
-function sameSeedCorners(node)
-    up_left_seed = findClosestSeed(Point(node.boundary[1].x, node.boundary[1].y))
-    up_right_seed = findClosestSeed(Point(node.boundary[2].x, node.boundary[1].y))
-    low_left_seed = findClosestSeed(Point(node.boundary[1].x, node.boundary[2].y))
-    low_right_seed = findClosestSeed(Point(node.boundary[2].x, node.boundary[2].y))
+function sameSeedCorners(node, seeds)
+    up_left_seed = findClosestSeed(Point(node.boundary[1].x, node.boundary[1].y), seeds)
+    up_right_seed = findClosestSeed(Point(node.boundary[2].x, node.boundary[1].y), seeds)
+    low_left_seed = findClosestSeed(Point(node.boundary[1].x, node.boundary[2].y), seeds)
+    low_right_seed = findClosestSeed(Point(node.boundary[2].x, node.boundary[2].y), seeds)
     isSame = true
 
     if (up_left_seed != up_right_seed) || (up_left_seed != low_left_seed) || (up_left_seed != low_right_seed)
@@ -108,7 +101,7 @@ function remove_chunk(bound, chunk_size)
 end
 
 
-function split(node)
+function split(node, grid, seeds)
     bounds = node.boundary
 
     # Checking to see if we have an odd area to split
@@ -140,17 +133,17 @@ function split(node)
     node.children[4].boundary = (Point(boundPrimary[1].x, low_right_Y), Point(low_right_X, boundPrimary[2].y))
 
     # Check if all four corners have the same closest seed
-    if sameSeedCorners(node)
+    if sameSeedCorners(node, seeds)
         # If all four corners have the same closest seed, stop subdividing
         # Set each point in the diagram to the closest seed
         node.children = []
-        populateDiagram(node, grid)
+        populateDiagram(node, grid, seeds)
         return
     end
 
     # adding the data back into the children nodes
     for point in node.dataInNode
-        closestSeed = findClosestSeed(point)
+        closestSeed = findClosestSeed(point, seeds)
         insertNode(node, point, closestSeed)
     end
 
@@ -195,25 +188,26 @@ end
 
 
 # inserting node
-function insertNode(node, point, closestSeed)
+function insertNode(node, point, seeds)
     # is empty means that there are only references to children
     # not a full region to split
     if isempty(node.children)
         push!(node.dataInNode, point)
         # could switch this to two rather than 4.. depends on the number of seeds.
         if length(node.dataInNode) > 4
-            split(node)
+            split(node, grid, seeds)
         end
 
     # if it's not empty, then it has points 
     # and cannot/should not be subdivided further
     else
         # Find the closest seed for the current point
-        closestSeed = findClosestSeed(point)
+        #closestSeed = findClosestSeed(point, seeds)
         
         # Use the same closestSeed for all children
         for child in node.children
-            insertNode(child, point, closestSeed)
+            #insertNode(child, point, closestSeed)
+            insertNode(child, point, seeds)
         end
     end
 end
@@ -266,19 +260,20 @@ function create_tree(boundary)
     return Node(boundary, [], [])
 end
 
-function populateDiagram(node, diagram)
+function populateDiagram(node, diagram, seeds)
     if isempty(node.children)
         # Leaf node
-        for row in 1:size(diagram, 1)
-            for column in 1:size(diagram, 2)
-                closest_seed = findClosestSeed(diagram[row, column])
-                diagram[row, column] = closest_seed
+        for row in eachindex(view(diagram, 1, :))
+            for col in eachindex(view(diagram, :, 1))
+                newPoint = diagram[row, col]
+                closest_seed = findClosestSeed(newPoint, seeds)
+                diagram[row, col] = closest_seed
             end
         end
     else
         # Non-leaf node, recursively process children
         for child in node.children
-            populateDiagram(child, diagram)
+            populateDiagram(child, diagram, seeds)
         end
     end
 
@@ -300,7 +295,7 @@ function printGrid(grid_to_print)
     end
 end
 
-function assignGrid()
+function assignGrid(grid, voronoi_bound)
     # assigning rows and cols for readability
     rows = size(grid, 1)
     columns = size(grid, 2)
@@ -319,7 +314,7 @@ function assignGrid()
 end
 
 # used to get an accruate voronoi "box"
-function getBoundary()
+function getBoundary(size_of_grid)
     new_bound = (Point(0,0), Point(0,0))
 
     if size_of_grid % 2 != 0
@@ -350,9 +345,9 @@ function gridToPoints()
 end
 
 # main runner for timing
-function generateVoronoi(tree::Node, boundary::Tuple{Point, Point}, diagram::Matrix{Point})
+function generateVoronoi(tree, diagram, seeds)
     # Traverse the tree and populate voronoi
-    return populateDiagram(tree, diagram)
+    return populateDiagram(tree, diagram, seeds)
 end
 
 #########################################################################################################################
@@ -362,13 +357,13 @@ end
 println("START")
 
 #initalization of stuff
-global seeds = [Point(-3, 3), Point(3, -3), Point(-3, -3), Point(3,3)]
-global size_of_grid = 7
-global grid = Matrix{Point}(undef, size_of_grid + 1, size_of_grid + 1)
-global voronoi_bound = getBoundary()
+seeds = [Point(-3, 3), Point(3, -3), Point(-3, -3), Point(3,3)]
+size_of_grid = 7
+grid = Matrix{Point}(undef, size_of_grid + 1, size_of_grid + 1)
+voronoi_bound = getBoundary(size_of_grid)
 
 #populating the voronoi grid with actual points
-assignGrid()
+assignGrid(grid, voronoi_bound)
 quadtree = create_tree(voronoi_bound)
 
 #adding in seeds
@@ -386,14 +381,21 @@ println("***********************************************************************
 # start of runtime        
 sec = @benchmark begin
     global final_diagram
-    final_diagram = generateVoronoi(quadtree, voronoi_bound, grid)
+    final_diagram = generateVoronoi(quadtree, grid, seeds)
 end
+
+
+println("*****************************************************************************************")
+println("Final Diagram - Nodes")
+println("*****************************************************************************************")
+printGrid(final_diagram)
+println("*****************************************************************************************")
 
 bruteDiagram = brute_force_partition(seeds, grid)
 println("*****************************************************************************************")
-println("Final Diagram")
+println("Final Diagram - Brute")
 println("*****************************************************************************************")
-printGrid(final_diagram)
+printGrid(bruteDiagram)
 println("*****************************************************************************************")
 
 time_seconds = time(sec)/1e9
