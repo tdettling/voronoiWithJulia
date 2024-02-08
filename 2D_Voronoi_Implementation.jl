@@ -3,8 +3,9 @@
 # defining a coordinate structure for our points and seeds
 using Pkg
 Pkg.add("BenchmarkTools")
+Pkg.add("Random")
 using BenchmarkTools
-
+using Random
 struct Point
     # https://lhendricks.org/econ890/julia/user_defined_types.html
     # for struct of point idea
@@ -151,7 +152,30 @@ function split(node, grid, seeds)
     node.dataInNode = []
 end
 
+# generatig random seeds for testing
+function generateRandomSeeds(numSeeds, boundary)
+    #grabbing max values for generation
+    minX = boundary[1].x
+    minY = boundary[2].y
+    maxX = boundary[2].x
+    maxY = boundary[1].y
 
+    seedArray = [Point(0, 0)]
+
+    count = 1
+    while count <= numSeeds
+        newX = rand(minX:maxX)
+        newY = rand(minY:maxY)
+
+        newPoint = Point(newX, newY)
+        push!(seedArray, newPoint)
+        count +=1
+    end
+
+    # delete the placeholder fake seed
+    popfirst!(seedArray)
+    return seedArray
+end
 
 
 function oddDivision(boundary)
@@ -284,9 +308,13 @@ end
 
 
 
-
+# https://www.geeksforgeeks.org/opening-and-reading-a-file-in-julia/
 function readFile(file)
     # needs to return x, y, number of seeds, and a list of seeds
+    seeds = Point[]
+    f = open("absolute path of the file", "r")
+    s = read(f, String) 
+    close(f)
 end
 
 function printGrid(grid_to_print)
@@ -354,15 +382,17 @@ end
 ## Start of Main
 #########################################################################################################################
 
-
 #=
+
 println("START")
 
 #initalization of stuff
 seeds = [Point(-3, 3), Point(3, -3), Point(-3, -3), Point(3,3)]
-size_of_grid = 7
+size_of_grid = 20
 grid = Matrix{Point}(undef, size_of_grid + 1, size_of_grid + 1)
 voronoi_bound = getBoundary(size_of_grid)
+
+#seeds = generateRandomSeeds(10, voronoi_bound)
 
 #populating the voronoi grid with actual points
 assignGrid(grid, voronoi_bound)
