@@ -145,7 +145,7 @@ function split(node, grid, seeds)
     # adding the data back into the children nodes
     for point in node.dataInNode
         closestSeed = findClosestSeed(point, seeds)
-        insertNode(node, point, closestSeed)
+        insertNode(node, point, closestSeed, grid)
     end
 
     # removing data from parent
@@ -212,7 +212,7 @@ end
 
 
 # inserting node
-function insertNode(node, point, seeds)
+function insertNode(node, point, seeds, grid)
     # is empty means that there are only references to children
     # not a full region to split
     if isempty(node.children)
@@ -226,12 +226,12 @@ function insertNode(node, point, seeds)
     # and cannot/should not be subdivided further
     else
         # Find the closest seed for the current point
-        #closestSeed = findClosestSeed(point, seeds)
+        closestSeed = findClosestSeed(point, seeds)
         
         # Use the same closestSeed for all children
         for child in node.children
-            #insertNode(child, point, closestSeed)
-            insertNode(child, point, seeds)
+            insertNode(child, point, closestSeed, grid)
+            #insertNode(child, point, seeds)
         end
     end
 end

@@ -17,7 +17,7 @@ function test_voronoi_small1()
     #adding in seeds
     for seed in seeds
         #seed will be closest to itself
-        insertNode(quadtree, seed, seed)
+        insertNode(quadtree, seed, seed, grid)
     end
 
     final_diagram = generateVoronoi(quadtree, grid, seeds)
@@ -41,7 +41,7 @@ function test_voronoi_small2()
     #adding in seeds
     for seed in seeds
         #seed will be closest to itself
-        insertNode(quadtree, seed, seed)
+        insertNode(quadtree, seed, seed, grid)
     end
 
     final_diagram = generateVoronoi(quadtree, grid, seeds)
@@ -65,7 +65,7 @@ function test_voronoi_small3()
     #adding in seeds
     for seed in seeds
         #seed will be closest to itself
-        insertNode(quadtree, seed, seed)
+        insertNode(quadtree, seed, seed, grid)
     end
 
     final_diagram = generateVoronoi(quadtree, grid, seeds)
@@ -90,7 +90,7 @@ function test_voronoi_med1()
     #adding in seeds
     for seed in seeds
         #seed will be closest to itself
-        insertNode(quadtree, seed, seed)
+        insertNode(quadtree, seed, seed, grid)
     end
 
     final_diagram = generateVoronoi(quadtree, grid, seeds)
