@@ -216,11 +216,11 @@ function insertNode(node, point, seeds, grid)
     # is empty means that there are only references to children
     # not a full region to split
     if isempty(node.children)
-        push!(node.dataInNode, point)
-        # could switch this to two rather than 4.. depends on the number of seeds.
-        if length(node.dataInNode) > 4
+        if length(node.dataInNode) >= 4
             split(node, grid, seeds)
         end
+        push!(node.dataInNode, point)
+
 
     # if it's not empty, then it has points 
     # and cannot/should not be subdivided further

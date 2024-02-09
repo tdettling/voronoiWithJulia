@@ -6,7 +6,7 @@ include("VoronoiWithThreads.jl")
 function test_voronoi_small1()
     #initalization of stuff
     seeds = [Point(-3, 3), Point(3, -3), Point(-3, -3), Point(3,3)]
-    size_of_grid = 7
+    size_of_grid = 8
     grid = Matrix{Point}(undef, size_of_grid + 1, size_of_grid + 1)
     voronoi_bound = getBoundary(size_of_grid)
 
@@ -77,7 +77,7 @@ end
 
 function test_voronoi_med1()
     #initalization of stuff
-    seeds = [Point(4, 7), Point(9,1), Point(2,3), Point(0,0), Point(14,2), Point(8,4)]
+    seeds = [Point(4, 7), Point(9,1), Point(2,3), Point(0,0), Point(12,2), Point(8,4)]
     size_of_grid = 30
     grid = Matrix{Point}(undef, size_of_grid + 1, size_of_grid + 1)
     voronoi_bound = getBoundary(size_of_grid)
