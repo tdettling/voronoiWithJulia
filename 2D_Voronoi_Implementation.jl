@@ -14,7 +14,7 @@ struct Point
 end
 
 # Defining quadtree node
-struct Node
+mutable struct Node
     # defining the boundary of the voronoi diagram with two points,
     # one in the upper right and one in the lower left corner.
     boundary::Tuple{Point, Point} 
@@ -104,20 +104,20 @@ end
 
 function split(node, grid, seeds)
     bounds = node.boundary
-
     # Checking to see if we have an odd area to split
-    checkBound = oddDivision(bounds)
-    boundPrimary = checkBound[1]
+    #checkBound = oddDivision(bounds)
+    #boundPrimary = checkBound[1][1]
+    #println(typeof(boundPrimary))
 
     # calculating new corners
-    low_right_X = div(boundPrimary[1].x + boundPrimary[2].x, 2)
-    low_right_Y = div(boundPrimary[1].y + boundPrimary[2].y, 2)
+    low_right_X = div(bounds[1].x + bounds[2].x, 2)
+    low_right_Y = div(bounds[1].y + bounds[2].y, 2)
 
-    low_right = (Point(low_right_X, low_right_Y), boundPrimary[2])
-    up_left = (boundPrimary[1], Point(low_right_X, low_right_Y))
+    low_right = (Point(low_right_X, low_right_Y), bounds[2])
+    up_left = (bounds[1], Point(low_right_X, low_right_Y))
     
-    up_right = (Point(low_right_X, boundPrimary[1].y), Point(boundPrimary[2].x, low_right_Y))
-    low_left = (Point(boundPrimary[1].x, low_right_Y), Point(low_right_X, boundPrimary[2].y))
+    up_right = (Point(low_right_X, bounds[1].y), Point(bounds[2].x, low_right_Y))
+    low_left = (Point(bounds[1].x, low_right_Y), Point(low_right_X, bounds[2].y))
 
     # adding the children
     node.children = [
@@ -128,10 +128,11 @@ function split(node, grid, seeds)
     ]
 
     # assigning new boundaries to the children
-    node.children[1].boundary = (low_right, boundPrimary[2])
-    node.children[2].boundary = (boundPrimary[1], Point(low_right_X, low_right_Y))
-    node.children[3].boundary = (Point(low_right_X, boundPrimary[1].y), Point(boundPrimary[2].x, low_right_Y))
-    node.children[4].boundary = (Point(boundPrimary[1].x, low_right_Y), Point(low_right_X, boundPrimary[2].y))
+    node.children[1].boundary = (Point(low_right_X, low_right_Y), Point(bounds[2].x, bounds[2].y))
+    node.children[2].boundary = (Point(bounds[1].x, bounds[1].y), Point(low_right_X, low_right_Y))
+    node.children[3].boundary = (Point(low_right_X, bounds[1].y), Point(bounds[2].x, low_right_Y))
+    node.children[4].boundary = (Point(bounds[1].x, low_right_Y), Point(low_right_X, bounds[2].y))
+
 
     # Check if all four corners have the same closest seed
     if sameSeedCorners(node, seeds)
@@ -144,8 +145,8 @@ function split(node, grid, seeds)
 
     # adding the data back into the children nodes
     for point in node.dataInNode
-        closestSeed = findClosestSeed(point, seeds)
-        insertNode(node, point, closestSeed, grid)
+        #closestSeed = findClosestSeed(point, seeds)
+        insertNode(node, point, seeds, grid)
     end
 
     # removing data from parent
@@ -226,11 +227,11 @@ function insertNode(node, point, seeds, grid)
     # and cannot/should not be subdivided further
     else
         # Find the closest seed for the current point
-        closestSeed = findClosestSeed(point, seeds)
+        #closestSeed = findClosestSeed(point, seeds)
         
         # Use the same closestSeed for all children
         for child in node.children
-            insertNode(child, point, closestSeed, grid)
+            insertNode(child, point, seeds, grid)
             #insertNode(child, point, seeds)
         end
     end
