@@ -6,14 +6,18 @@ Pkg.add("BenchmarkTools")
 Pkg.add("Random")
 using BenchmarkTools
 using Random
+
+# https://lhendricks.org/econ890/julia/user_defined_types.html
+# for struct of point idea
+# Struct defines a coordniate Point
+# copntainms a Point.x and a Point.y call
 struct Point
-    # https://lhendricks.org/econ890/julia/user_defined_types.html
-    # for struct of point idea
     x::Int
     y::Int
 end
 
 # Defining quadtree node
+#Node structure to store the quadtree
 mutable struct Node
     # defining the boundary of the voronoi diagram with two points,
     # one in the upper right and one in the lower left corner.
@@ -28,6 +32,8 @@ mutable struct Node
 end
 
 # function to determine if a point/seed falls in our proper boundaries
+# takes in a Point, and a boundary (Tuple of Points)
+# returns a bool of whetehr or not a Point is within the provided boundary 
 function in_boundary(point, boundary)
     isIn = true
 
@@ -39,6 +45,9 @@ function in_boundary(point, boundary)
     return isIn
 end
 
+# This function takes in a Point and a List of Seeds (Points), 
+# and determines the closest need to that point. 
+# returns the closest seed (Point)
 function findClosestSeed(point, seeds)
     winner = seeds[1]
     winDistance = sqrt((winner.x - point.x)^2 + (winner.y - point.y)^2)
@@ -53,7 +62,7 @@ function findClosestSeed(point, seeds)
     return winner
 end
 
-
+# This function generates a new grid based on a new set of boundary coordinates
 function generateNewGrid(up_left, low_right, voronoi_bound)
     xRange = (up_left.x - low_right.x)*-1
     yRange = (up_left.y - low_right.y)
@@ -72,6 +81,11 @@ function generateNewGrid(up_left, low_right, voronoi_bound)
     return newGrid
 end
 
+# this functiuon determines if all four corners of a grid
+# (stored within a node)
+# have the same closest seed. 
+# returns a bool determining if all 4 corners
+# have the same cloestest seed. 
 function sameSeedCorners(node, seeds)
     up_left_seed = findClosestSeed(Point(node.boundary[1].x, node.boundary[1].y), seeds)
     up_right_seed = findClosestSeed(Point(node.boundary[2].x, node.boundary[1].y), seeds)
@@ -88,7 +102,10 @@ end
 
 
 
-
+# Originally used for brute-force odd oddDivision
+# this function takes a small chunk of an area, 1xn or nx1, 
+# retunns a (n-1)xn, nx(n-1), or a (n-1)x(n-1) shortened area, along 
+# with the smaller portion (chunk) we removed.
 function remove_chunk(bound, chunk_size)
     # Extract the corners of the chunk
     chunk_up_left = bound[1]
@@ -102,6 +119,10 @@ function remove_chunk(bound, chunk_size)
 end
 
 
+# This function takes in a particular node, a grid (matrix of points), amnd a tuple of Points. 
+# when the children of a node are empty, that means we can spliut our area. 
+# We split our node into 4 children, and repeat our process of splitting
+# We incorperate sameSeedCorners() for optimization
 function split(node, grid, seeds)
     bounds = node.boundary
     # Checking to see if we have an odd area to split
@@ -153,7 +174,9 @@ function split(node, grid, seeds)
     node.dataInNode = []
 end
 
-# generatig random seeds for testing
+# fucntion that generates a truple of Points 
+# used in testing
+# retunrs a Tupole of Points
 function generateRandomSeeds(numSeeds, boundary)
     #grabbing max values for generation
     minX = boundary[1].x
@@ -178,7 +201,8 @@ function generateRandomSeeds(numSeeds, boundary)
     return seedArray
 end
 
-
+# determines odd divisioin eligibility, and splits. 
+# returns two new sets of diagrams to calculate
 function oddDivision(boundary)
     boundarySet = Tuple{Tuple{Point, Point}, Tuple{Point, Point}}
 
@@ -212,7 +236,7 @@ function oddDivision(boundary)
 end
 
 
-# inserting node
+# this function inserts a new node into our tree
 function insertNode(node, point, seeds, grid)
     # is empty means that there are only references to children
     # not a full region to split
@@ -239,7 +263,7 @@ end
 
 
 
-# given two bounary sets, make the larges box and return it. 
+# given two bounary sets, make the largest box and return it. 
 function maxBoundary(bound1, bound2)
     maxBoundary = Tuple{Point, Point}
 
@@ -257,6 +281,7 @@ function maxBoundary(bound1, bound2)
 end
 
 # Brute-force function to compute closest seed for each pixel in a given boundary
+# will return a filled out grid 
 function brute_force_partition(seedList, gridPoints)
     for row in size(gridPoints, 1)
         for col in size(gridPoints, 2)
@@ -275,7 +300,7 @@ function brute_force_partition(seedList, gridPoints)
     return gridPoints
 end
 
-
+# simple distance function for code clarity
 function distance(p1, p2)
     return sqrt((p2.x - p1.x)^2 + (p2.y-p1.y)^2)
 end
@@ -285,6 +310,8 @@ function create_tree(boundary)
     return Node(boundary, [], [])
 end
 
+# fucntion that manually populates our new grid based on the closest seed
+# recursive nature
 function populateDiagram(node, diagram, seeds)
     if isempty(node.children)
         # Leaf node
@@ -308,7 +335,8 @@ end
 
 
 
-
+# file reads in data
+#FIXME
 # https://www.geeksforgeeks.org/opening-and-reading-a-file-in-julia/
 function readFile(file)
     # needs to return x, y, number of seeds, and a list of seeds
@@ -318,12 +346,15 @@ function readFile(file)
     close(f)
 end
 
+# Provides a clean print of any matrix of points
+# used with samll test cases in Dev
 function printGrid(grid_to_print)
     for row_of_grid in eachrow(grid_to_print)
         println(row_of_grid)
     end
 end
 
+# used to automatically populate the grid with starting points
 function assignGrid(grid, voronoi_bound)
     # assigning rows and cols for readability
     rows = size(grid, 1)
@@ -343,6 +374,13 @@ function assignGrid(grid, voronoi_bound)
 end
 
 # used to get an accruate voronoi "box"
+# this function will determine the side lengths of a given area. 
+# Based on the area (odd or even), 
+# we can "shift" the box foirmed on an x,y corrdniate plane such that
+# odd areas shoift up one unit while keeping a box shape on the plane.
+# for example, a 4x3 box with an origin of (0,0) will have an upper left
+# coordniare of (-2,2) and the lower right bound coordniate will be (2, -1). 
+# still a square area, just "shifts" the box on the plane. 
 function getBoundary(size_of_grid)
     new_bound = (Point(0,0), Point(0,0))
 
@@ -365,17 +403,9 @@ function getBoundary(size_of_grid)
     return new_bound
 end
 
-function pointToGrid()
-    voronoi = zeros(Int32,SIZE_AREA_NT,SIZE_AREA_NT)
-end
-
-function gridToPoints()
-
-end
 
 # main runner for timing
 function generateVoronoi(tree, diagram, seeds)
-    # Traverse the tree and populate voronoi
     return populateDiagram(tree, diagram, seeds)
 end
 
