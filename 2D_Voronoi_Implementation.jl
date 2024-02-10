@@ -123,7 +123,7 @@ end
 # when the children of a node are empty, that means we can spliut our area. 
 # We split our node into 4 children, and repeat our process of splitting
 # We incorperate sameSeedCorners() for optimization
-function split(node, grid, seeds)
+function splitNodes(node, grid, seeds)
     bounds = node.boundary
     # Checking to see if we have an odd area to split
     #checkBound = oddDivision(bounds)
@@ -242,7 +242,7 @@ function insertNode(node, point, seeds, grid)
     # not a full region to split
     if isempty(node.children)
         if length(node.dataInNode) >= 4
-            split(node, grid, seeds)
+            splitNodes(node, grid, seeds)
         end
         push!(node.dataInNode, point)
 
@@ -336,14 +336,30 @@ end
 
 
 # file reads in data
-#FIXME
+
 # https://www.geeksforgeeks.org/opening-and-reading-a-file-in-julia/
-function readFile(file)
+
+function readFile(filePath)
     # needs to return x, y, number of seeds, and a list of seeds
     seeds = Point[]
-    f = open("absolute path of the file", "r")
-    s = read(f, String) 
+    f = open(filePath, "r")
+
+    numSeeds = parse(Int, readline(f))
+    for i in 1:numSeeds
+        line = readline(f)
+
+        # Split the line into parts
+        point = split(line)
+
+        # Extract x and y coordinates and convert them to integers
+        seedX = parse(Int, point[1])
+        seedY = parse(Int, point[2])
+        newPoint = Point(seedX, seedY)
+        # Create a Point object and push it to the array
+        push!(seeds, newPoint)
+    end
     close(f)
+    return seeds
 end
 
 # Provides a clean print of any matrix of points
@@ -468,3 +484,5 @@ println("***********************************************************************
 
 println("END")
 =#
+#listT = readFile("C:/Users/tdett/2024_research/forkedJuliaVoronoi/voronoiWithJulia/TestCase1")
+#println(listT)
