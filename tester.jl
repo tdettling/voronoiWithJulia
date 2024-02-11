@@ -22,7 +22,6 @@ function test_voronoi_oneSeed()
     end
 
     final_diagram = generateVoronoi(quadtree, grid, seeds)
-    # You can customize the actual and expected diagrams based on your expectations
     expected_diagram = brute_force_partition(seeds, grid)
     
     @test final_diagram == expected_diagram
@@ -46,7 +45,6 @@ function test_voronoi_small1()
     end
 
     final_diagram = generateVoronoi(quadtree, grid, seeds)
-    # You can customize the actual and expected diagrams based on your expectations
     expected_diagram = brute_force_partition(seeds, grid)
     
     @test final_diagram == expected_diagram
@@ -70,7 +68,6 @@ function test_voronoi_small2()
     end
 
     final_diagram = generateVoronoi(quadtree, grid, seeds)
-    # You can customize the actual and expected diagrams based on your expectations
     expected_diagram = brute_force_partition(seeds, grid)
     
     @test final_diagram == expected_diagram
@@ -94,7 +91,6 @@ function test_voronoi_small3()
     end
 
     final_diagram = generateVoronoi(quadtree, grid, seeds)
-    # You can customize the actual and expected diagrams based on your expectations
     expected_diagram = brute_force_partition(seeds, grid)
     
     @test final_diagram == expected_diagram
@@ -122,7 +118,6 @@ function test_voronoi_med1()
     end
 
     final_diagram = generateVoronoi(quadtree, grid, seeds)
-    # You can customize the actual and expected diagrams based on your expectations
     expected_diagram = brute_force_partition(seeds, grid)
     
     @test final_diagram == expected_diagram
@@ -150,7 +145,6 @@ function test_voronoi_med2()
     end
 
     final_diagram = generateVoronoi(quadtree, grid, seeds)
-    # You can customize the actual and expected diagrams based on your expectations
     expected_diagram = brute_force_partition(seeds, grid)
     
     @test final_diagram == expected_diagram
@@ -177,7 +171,6 @@ function test_voronoi_med3()
     end
 
     final_diagram = generateVoronoi(quadtree, grid, seeds)
-    # You can customize the actual and expected diagrams based on your expectations
     expected_diagram = brute_force_partition(seeds, grid)
     
     @test final_diagram == expected_diagram
@@ -205,7 +198,6 @@ function test_voronoi_lag1()
     end
 
     final_diagram = generateVoronoi(quadtree, grid, seeds)
-    # You can customize the actual and expected diagrams based on your expectations
     expected_diagram = brute_force_partition(seeds, grid)
     
     @test final_diagram == expected_diagram
@@ -233,7 +225,6 @@ function test_voronoi_lag2()
     end
 
     final_diagram = generateVoronoi(quadtree, grid, seeds)
-    # You can customize the actual and expected diagrams based on your expectations
     expected_diagram = brute_force_partition(seeds, grid)
     
     @test final_diagram == expected_diagram
@@ -261,12 +252,12 @@ function test_voronoi_lag3()
     end
 
     final_diagram = generateVoronoi(quadtree, grid, seeds)
-    # You can customize the actual and expected diagrams based on your expectations
     expected_diagram = brute_force_partition(seeds, grid)
     
     @test final_diagram == expected_diagram
 end
-# Run the test
+
+
 @testset "Voronoi Diagram Test" begin
     # single seed case
     test_voronoi_oneSeed()

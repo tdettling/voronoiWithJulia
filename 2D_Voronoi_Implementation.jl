@@ -301,6 +301,7 @@ function brute_force_partition(seedList, gridPoints)
 end
 
 # simple distance function for code clarity
+# input is two Points 
 function distance(p1, p2)
     return sqrt((p2.x - p1.x)^2 + (p2.y-p1.y)^2)
 end
