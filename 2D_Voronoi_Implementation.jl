@@ -339,13 +339,21 @@ end
 # file reads in data
 
 # https://www.geeksforgeeks.org/opening-and-reading-a-file-in-julia/
-
+#=
 function readFile(filePath)
     # needs to return x, y, number of seeds, and a list of seeds
     seeds = Point[]
+    println("opening path")
+    #f = open(filePath, "r", encoding="UTF-16 LE")
     f = open(filePath, "r")
 
+    println("setting num seeds")
+    #numSeeds = parse(Int, readline(f))
+    content = read(f, String)
     numSeeds = parse(Int, readline(f))
+    close(f)
+
+    println("reading actual seeds")
     for i in 1:numSeeds
         line = readline(f)
 
@@ -359,7 +367,6 @@ function readFile(filePath)
         # Create a Point object and push it to the array
         push!(seeds, newPoint)
     end
-    close(f)
     return seeds
 end
 
@@ -370,6 +377,42 @@ function printGrid(grid_to_print)
         println(row_of_grid)
     end
 end
+=#
+
+function readFile(filePath)
+    # needs to return x, y, number of seeds, and a list of seeds
+    seeds = Point[]
+    println("opening path")
+
+    # Read file with UTF-16LE encoding
+    content = read(filePath, String, encoding="UTF-16LE")
+
+    # Split the content into lines
+    lines = split(content, '\n')
+
+    # Extract the number of seeds from the first line
+    numSeeds = parse(Int, lines[1])
+
+    println("reading actual seeds")
+    for i in 2:eachindex(lines)
+        line = lines[i]
+
+        # Split the line into parts
+        point = split(line)
+
+        # Extract x and y coordinates and convert them to integers
+        seedX = parse(Int, point[1])
+        seedY = parse(Int, point[2])
+        newPoint = Point(seedX, seedY)
+        # Create a Point object and push it to the array
+        push!(seeds, newPoint)
+    end
+
+    return seeds
+end
+
+
+
 
 # used to automatically populate the grid with starting points
 function assignGrid(grid, voronoi_bound)
@@ -423,12 +466,54 @@ end
 
 # main runner for timing
 function generateVoronoi(tree, diagram, seeds)
-    return populateDiagram(tree, diagram, seeds)
+    # retun in front originally 
+    tempsave = populateDiagram(tree, diagram, seeds)
+    return
 end
 
+
+# actual main runner
+
+function mainMain(filepath)
+    size_of_grid = 1024
+    grid = Matrix{Point}(undef, size_of_grid + 1, size_of_grid + 1)
+    voronoi_bound = getBoundary(size_of_grid)
+    seeds = readFile(filepath)
+
+    #populating the voronoi grid with actual points
+    assignGrid(grid, voronoi_bound)
+    quadtree = create_tree(voronoi_bound)
+
+    # Adding in seeds
+    for seed in seeds
+        # Seed will be closest to itself
+        insertNode(quadtree, seed, seeds, grid)
+    end
+
+    # Start timing
+    start_time = time()
+
+    generateVoronoi(quadtree, grid, seeds)
+
+    # End timing
+    end_time = time()
+
+    elapsed_time = end_time - start_time
+
+    println(elapsed_time)
+end
 #########################################################################################################################
 ## Start of Main
 #########################################################################################################################
+
+if length(ARGS) == 0
+    println("No command-line arguments provided.")
+else
+    filepath = ARGS[1]
+    mainMain(filepath)
+end
+
+
 
 #=
 
@@ -487,3 +572,5 @@ println("END")
 =#
 #listT = readFile("C:/Users/tdett/2024_research/forkedJuliaVoronoi/voronoiWithJulia/TestCase1")
 #println(listT)
+
+
