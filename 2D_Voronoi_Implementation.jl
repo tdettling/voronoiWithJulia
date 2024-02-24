@@ -339,21 +339,18 @@ end
 # file reads in data
 
 # https://www.geeksforgeeks.org/opening-and-reading-a-file-in-julia/
-#=
+
 function readFile(filePath)
     # needs to return x, y, number of seeds, and a list of seeds
     seeds = Point[]
-    println("opening path")
+    ##println("opening path")
     #f = open(filePath, "r", encoding="UTF-16 LE")
     f = open(filePath, "r")
 
-    println("setting num seeds")
-    #numSeeds = parse(Int, readline(f))
-    content = read(f, String)
-    numSeeds = parse(Int, readline(f))
-    close(f)
+    #println("setting num seeds")
+    numSeeds = parse(Int64, readline(f))
 
-    println("reading actual seeds")
+    #println("reading actual seeds")
     for i in 1:numSeeds
         line = readline(f)
 
@@ -367,6 +364,7 @@ function readFile(filePath)
         # Create a Point object and push it to the array
         push!(seeds, newPoint)
     end
+    close(f)
     return seeds
 end
 
@@ -377,8 +375,9 @@ function printGrid(grid_to_print)
         println(row_of_grid)
     end
 end
-=#
 
+
+#=
 function readFile(filePath)
     # needs to return x, y, number of seeds, and a list of seeds
     seeds = Point[]
@@ -411,7 +410,7 @@ function readFile(filePath)
     return seeds
 end
 
-
+=#
 
 
 # used to automatically populate the grid with starting points
