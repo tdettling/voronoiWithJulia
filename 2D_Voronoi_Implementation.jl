@@ -93,12 +93,13 @@ function sameSeedCorners(node, seeds)
     low_right_seed = findClosestSeed(Point(node.boundary[2].x, node.boundary[2].y), seeds)
     isSame = true
 
-    if (up_left_seed != up_right_seed) || (up_left_seed != low_left_seed) || (up_left_seed != low_right_seed)
+    if !(isequal(up_left_seed, up_right_seed) && isequal(up_left_seed, low_left_seed) && isequal(up_left_seed, low_right_seed))
         isSame = false
     end
 
     return isSame
 end
+
 
 
 
@@ -343,14 +344,14 @@ end
 function readFile(filePath)
     # needs to return x, y, number of seeds, and a list of seeds
     seeds = Point[]
-    ##println("opening path")
+    println("opening path")
     #f = open(filePath, "r", encoding="UTF-16 LE")
     f = open(filePath, "r")
 
-    #println("setting num seeds")
+    println("setting num seeds")
     numSeeds = parse(Int64, readline(f))
 
-    #println("reading actual seeds")
+    println("reading actual seeds")
     for i in 1:numSeeds
         line = readline(f)
 
@@ -466,7 +467,7 @@ end
 # main runner for timing
 function generateVoronoi(tree, diagram, seeds)
     # retun in front originally 
-    tempsave = populateDiagram(tree, diagram, seeds)
+    populateDiagram(tree, diagram, seeds)
     return
 end
 
@@ -474,12 +475,15 @@ end
 # actual main runner
 
 function mainMain(filepath)
+    println("initalizing boudary")
     size_of_grid = 1024
     grid = Matrix{Point}(undef, size_of_grid + 1, size_of_grid + 1)
     voronoi_bound = getBoundary(size_of_grid)
+    println("begin reading file")
     seeds = readFile(filepath)
 
     #populating the voronoi grid with actual points
+    println("populate grid")
     assignGrid(grid, voronoi_bound)
     quadtree = create_tree(voronoi_bound)
 
@@ -489,9 +493,10 @@ function mainMain(filepath)
         insertNode(quadtree, seed, seeds, grid)
     end
 
+    println("start timing")
     # Start timing
     start_time = time()
-
+    println("generateing digram")
     generateVoronoi(quadtree, grid, seeds)
 
     # End timing
