@@ -62,25 +62,6 @@ function findClosestSeed(point, seeds)
     return winner
 end
 
-# This function generates a new grid based on a new set of boundary coordinates
-function generateNewGrid(up_left, low_right, voronoi_bound)
-    xRange = (up_left.x - low_right.x)*-1
-    yRange = (up_left.y - low_right.y)
-
-    newGrid = Matrix{Point}(undef, xRange, yRange)
-    # looping through grid
-    for row in xRange
-        for column in yRange
-            # assigning actual coordinate to space
-            # -1 for row/column
-            newX = voronoi_bound[1].x + (column-1)
-            newY = voronoi_bound[1].y - (row-1)
-            newGrid[row, column] = Point(newX, newY)
-        end
-    end
-    return newGrid
-end
-
 # this functiuon determines if all four corners of a grid
 # (stored within a node)
 # have the same closest seed. 
@@ -101,25 +82,6 @@ function sameSeedCorners(node, seeds)
 end
 
 
-
-
-# Originally used for brute-force odd oddDivision
-# this function takes a small chunk of an area, 1xn or nx1, 
-# retunns a (n-1)xn, nx(n-1), or a (n-1)x(n-1) shortened area, along 
-# with the smaller portion (chunk) we removed.
-function remove_chunk(bound, chunk_size)
-    # Extract the corners of the chunk
-    chunk_up_left = bound[1]
-    chunk_low_right = Point(bound[1].x + chunk_size[1] - 1, bound[1].y - chunk_size[2] + 1)
-
-    # Extract the remaining larger area
-    remaining_up_left = Point(bound[1].x, bound[1].y - chunk_size[2])
-    remaining_low_right = Point(bound[2].x, bound[2].y)
-
-    return ((remaining_up_left, remaining_low_right), (chunk_up_left, chunk_low_right))
-end
-
-
 # This function takes in a particular node, a grid (matrix of points), amnd a tuple of Points. 
 # when the children of a node are empty, that means we can spliut our area. 
 # We split our node into 4 children, and repeat our process of splitting
@@ -127,10 +89,6 @@ end
 function splitNodes(node, grid, seeds)
     bounds = node.boundary
     # Checking to see if we have an odd area to split
-    #checkBound = oddDivision(bounds)
-    #boundPrimary = checkBound[1][1]
-    #println(typeof(boundPrimary))
-
     # calculating new corners
     low_right_X = div(bounds[1].x + bounds[2].x, 2)
     low_right_Y = div(bounds[1].y + bounds[2].y, 2)
@@ -161,6 +119,7 @@ function splitNodes(node, grid, seeds)
         # If all four corners have the same closest seed, stop subdividing
         # Set each point in the diagram to the closest seed
         node.children = []
+        print("--populaitng diagram--")
         populateDiagram(node, grid, seeds)
         return
     end
@@ -202,40 +161,6 @@ function generateRandomSeeds(numSeeds, boundary)
     return seedArray
 end
 
-# determines odd divisioin eligibility, and splits. 
-# returns two new sets of diagrams to calculate
-function oddDivision(boundary)
-    boundarySet = Tuple{Tuple{Point, Point}, Tuple{Point, Point}}
-
-    #placeholders for values
-    #new larger area
-    new_up_right = boundary[1]
-    new_low_left = boundary[2]
-
-    # small area that we cut off of the larger area
-    extra_up_right = boundary[1]
-    extra_low_left = boundary[2]
-
-    if ((boundary[2].x - boundary[1].x) % 2 == 0) && ((boundary[2].y - boundary[1].y) % 2 == 0)
-        boundarySet = (boundary, boundary)
-    else
-        # horozontal length odd
-        if (boundary[2].x - boundary[1].x) % 2 != 0
-            new_up_right = (boundary[1].x + 1, boundary[1].y)
-            extra_low_left = (boundary[1].x + 1, boundary[2].y)
-        end
-        # vertical length odd
-        if (boundary[2].y - boundary[1].y) % 2 != 0
-            new_low_left = (boundary[2].x, boundary[2].y + 1)
-            extra_up_right = (boundary[1].x, boundary[2].y - 1)
-        end
-        #returning two areas to calculate the diagram with
-        boundarySet = ((new_up_right, new_low_left), (extra_up_right, extra_low_left))
-    end
-
-    return boundarySet
-end
-
 
 # this function inserts a new node into our tree
 function insertNode(node, point, seeds, grid)
@@ -243,17 +168,14 @@ function insertNode(node, point, seeds, grid)
     # not a full region to split
     if isempty(node.children)
         if length(node.dataInNode) >= 4
+            print("--splitting nodes--")
             splitNodes(node, grid, seeds)
         end
         push!(node.dataInNode, point)
-
-
+        return
     # if it's not empty, then it has points 
     # and cannot/should not be subdivided further
-    else
-        # Find the closest seed for the current point
-        #closestSeed = findClosestSeed(point, seeds)
-        
+    else        
         # Use the same closestSeed for all children
         for child in node.children
             insertNode(child, point, seeds, grid)
@@ -262,24 +184,6 @@ function insertNode(node, point, seeds, grid)
     end
 end
 
-
-
-# given two bounary sets, make the largest box and return it. 
-function maxBoundary(bound1, bound2)
-    maxBoundary = Tuple{Point, Point}
-
-
-    # new upper right
-    max_X1 = min(bound1[1].x, bound2[1].x)
-    max_Y1 = max(bound1[1].y, bound2[1].y)
-
-    # new lower left
-    max_X2 = max(bound1[2].x, bound2[2].x)
-    max_Y2 = min(bound1[2].y, bound2[2].y)
-
-    maxBoundary = (Point(max_X1, max_Y1), Point(max_X2, max_Y2))
-    return maxBoundary
-end
 
 # Brute-force function to compute closest seed for each pixel in a given boundary
 # will return a filled out grid 
@@ -483,10 +387,11 @@ function mainMain(filepath)
     seeds = readFile(filepath)
 
     #populating the voronoi grid with actual points
-    println("populate grid")
-    assignGrid(grid, voronoi_bound)
+    println("populate grid, creating quadtree")
+    #assignGrid(grid, voronoi_bound)
     quadtree = create_tree(voronoi_bound)
 
+    println("adding in seeds")
     # Adding in seeds
     for seed in seeds
         # Seed will be closest to itself
