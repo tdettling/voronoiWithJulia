@@ -114,15 +114,16 @@ function splitNodes(node, grid, seeds)
     node.children[4].boundary = (Point(bounds[1].x, low_right_Y), Point(low_right_X, bounds[2].y))
 
 
-    # Check if all four corners have the same closest seed
+    # Check if all four corners have the same closest seed4
+    
     if sameSeedCorners(node, seeds)
         # If all four corners have the same closest seed, stop subdividing
         # Set each point in the diagram to the closest seed
         node.children = []
-        print("--populaitng diagram--")
-        populateDiagram(node, grid, seeds)
+        #populateDiagram(node, grid, seeds)
         return
     end
+    
 
     # adding the data back into the children nodes
     for point in node.dataInNode
@@ -168,7 +169,6 @@ function insertNode(node, point, seeds, grid)
     # not a full region to split
     if isempty(node.children)
         if length(node.dataInNode) >= 4
-            print("--splitting nodes--")
             splitNodes(node, grid, seeds)
         end
         push!(node.dataInNode, point)
@@ -220,7 +220,18 @@ end
 # recursive nature
 function populateDiagram(node, diagram, seeds)
     if isempty(node.children)
+                # Leaf node
+                #double checking
+                if !isempty(node.dataInNode)
+                    closest_seed = findClosestSeed(node.dataInNode[1], seeds)
+                    #println("line 227")
+                    for point in node.dataInNode
+                        # shift one becasue julia is 1-based indexing
+                        diagram[point.x + 1, point.y+1] = closest_seed
+                    end
+                end
         # Leaf node
+        #=
         for row in eachindex(view(diagram, 1, :))
             for col in eachindex(view(diagram, :, 1))
                 newPoint = diagram[row, col]
@@ -228,6 +239,8 @@ function populateDiagram(node, diagram, seeds)
                 diagram[row, col] = closest_seed
             end
         end
+        =#
+
     else
         # Non-leaf node, recursively process children
         for child in node.children
@@ -237,9 +250,6 @@ function populateDiagram(node, diagram, seeds)
 
     return diagram
 end
-
-
-
 
 # file reads in data
 
@@ -280,42 +290,6 @@ function printGrid(grid_to_print)
         println(row_of_grid)
     end
 end
-
-
-#=
-function readFile(filePath)
-    # needs to return x, y, number of seeds, and a list of seeds
-    seeds = Point[]
-    println("opening path")
-
-    # Read file with UTF-16LE encoding
-    content = read(filePath, String, encoding="UTF-16LE")
-
-    # Split the content into lines
-    lines = split(content, '\n')
-
-    # Extract the number of seeds from the first line
-    numSeeds = parse(Int, lines[1])
-
-    println("reading actual seeds")
-    for i in 2:eachindex(lines)
-        line = lines[i]
-
-        # Split the line into parts
-        point = split(line)
-
-        # Extract x and y coordinates and convert them to integers
-        seedX = parse(Int, point[1])
-        seedY = parse(Int, point[2])
-        newPoint = Point(seedX, seedY)
-        # Create a Point object and push it to the array
-        push!(seeds, newPoint)
-    end
-
-    return seeds
-end
-
-=#
 
 
 # used to automatically populate the grid with starting points
@@ -382,7 +356,8 @@ function mainMain(filepath)
     println("initalizing boudary")
     size_of_grid = 1024
     grid = Matrix{Point}(undef, size_of_grid + 1, size_of_grid + 1)
-    voronoi_bound = getBoundary(size_of_grid)
+    voronoi_bound = (Point(0,0), Point(1024, 1024))
+    #voronoi_bound = getBoundary(size_of_grid)
     println("begin reading file")
     seeds = readFile(filepath)
 
