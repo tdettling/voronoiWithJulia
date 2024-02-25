@@ -173,11 +173,12 @@ function insertNode(node, point, seeds, grid)
         end
         push!(node.dataInNode, point)
         return
-    # if it's not empty, then it has points 
+    # if it's not emp ty, then it has points 
     # and cannot/should not be subdivided further
     else        
         # Use the same closestSeed for all children
         for child in node.children
+            #println("line 181")
             insertNode(child, point, seeds, grid)
             #insertNode(child, point, seeds)
         end
@@ -219,6 +220,16 @@ end
 # fucntion that manually populates our new grid based on the closest seed
 # recursive nature
 function populateDiagram(node, diagram, seeds)
+    # traversing the tree
+    # for each node in the tree
+        # if it has children
+            #populateDiagram(children, seeds)
+        #else
+            # then the node is a leaf node, and everything inside of the data 
+            # (the datapoints) have same closest seed
+            # set each point to that closest seed
+
+
     if isempty(node.children)
                 # Leaf node
                 #double checking
@@ -356,7 +367,7 @@ function mainMain(filepath)
     println("initalizing boudary")
     size_of_grid = 1024
     grid = Matrix{Point}(undef, size_of_grid + 1, size_of_grid + 1)
-    voronoi_bound = (Point(0,0), Point(1024, 1024))
+    voronoi_bound = (Point(0,1024), Point(1024, 0))
     #voronoi_bound = getBoundary(size_of_grid)
     println("begin reading file")
     seeds = readFile(filepath)
@@ -368,19 +379,20 @@ function mainMain(filepath)
 
     println("adding in seeds")
     # Adding in seeds
+    start_time = time()
     for seed in seeds
         # Seed will be closest to itself
         insertNode(quadtree, seed, seeds, grid)
     end
-
+    end_time = time()
     println("start timing")
-    # Start timing
-    start_time = time()
+    
+
     println("generateing digram")
-    generateVoronoi(quadtree, grid, seeds)
+   # generateVoronoi(quadtree, grid, seeds)
 
     # End timing
-    end_time = time()
+
 
     elapsed_time = end_time - start_time
 
